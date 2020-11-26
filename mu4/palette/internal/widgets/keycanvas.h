@@ -21,7 +21,7 @@
 #define __KEYCANVAS_H__
 
 #include "modularity/ioc.h"
-#include "ui/iuiconfiguration.h"
+#include "../ipaletteconfiguration.h"
 
 namespace Ms {
 class Accidental;
@@ -35,16 +35,16 @@ class KeyCanvas : public QFrame
 {
     Q_OBJECT
 
-    INJECT(palette, mu::framework::IUiConfiguration, uiConfiguration)
+    INJECT(palette, mu::palette::IPaletteConfiguration, configuration)
 
-    Accidental* dragElement;
-    Accidental* moveElement;
+    Accidental* dragElement = nullptr;
+    Accidental* moveElement = nullptr;
     QTransform _matrix, imatrix;
-    double extraMag;
+    double extraMag = false;
     QList<Accidental*> accidentals;
     QPointF startMove;
     QPointF base;
-    Clef* clef;
+    Clef* clef = nullptr;
 
     virtual void paintEvent(QPaintEvent*);
     virtual void mousePressEvent(QMouseEvent*);

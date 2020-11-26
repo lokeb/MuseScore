@@ -22,19 +22,19 @@
 #include <vector>
 #include "actions/imoduleactions.h"
 
-namespace mu {
-namespace notation {
+namespace mu::notation {
 class NotationActions : public actions::IModuleActions
 {
 public:
 
     const actions::Action& action(const actions::ActionName& name) const override;
 
-private:
+    static actions::ActionList defaultNoteInputActions();
 
-    static const std::vector<actions::Action> m_actions;
+private:
+    static const actions::ActionList m_actions;
+    static const actions::ActionList m_noteInputActions;
 };
-}
 }
 
 #endif // MU_NOTATION_NOTATIONACTIONS_H

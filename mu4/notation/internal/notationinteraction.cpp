@@ -85,6 +85,8 @@ void NotationInteraction::paint(QPainter* p)
     drawAnchorLines(p);
 
     drawTextEditMode(p);
+
+    drawSelectionRange(p);
 }
 
 void NotationInteraction::startNoteEntry()
@@ -799,7 +801,7 @@ bool NotationInteraction::isDropAccepted(const QPointF& pos, Qt::KeyboardModifie
     case ElementType::INSTRUMENT_CHANGE:
     case ElementType::REHEARSAL_MARK:
     case ElementType::JUMP:
-    case ElementType::REPEAT_MEASURE:
+    case ElementType::MEASURE_REPEAT:
     case ElementType::ICON:
     case ElementType::CHORD:
     case ElementType::SPACER:
@@ -951,7 +953,7 @@ bool NotationInteraction::drop(const QPointF& pos, Qt::KeyboardModifiers modifie
     case ElementType::INSTRUMENT_CHANGE:
     case ElementType::REHEARSAL_MARK:
     case ElementType::JUMP:
-    case ElementType::REPEAT_MEASURE:
+    case ElementType::MEASURE_REPEAT:
     case ElementType::ICON:
     case ElementType::NOTE:
     case ElementType::CHORD:
@@ -1679,6 +1681,35 @@ void NotationInteraction::drawTextEditMode(QPainter* painter)
     m_textEditData.element->drawEditMode(painter, m_textEditData);
 }
 
+void NotationInteraction::drawSelectionRange(QPainter* painter)
+{
+    if (!m_selection->isRange()) {
+        return;
+    }
+
+    painter->setBrush(Qt::NoBrush);
+
+    QColor selectionColor = configuration()->selectionColor();
+    qreal penWidth = 3.0 / painter->worldTransform().toAffine().m11();
+
+    QPen pen;
+    pen.setColor(selectionColor);
+    pen.setWidthF(penWidth);
+    pen.setStyle(Qt::SolidLine);
+    painter->setPen(pen);
+
+    std::vector<QRectF> rangeArea = m_selection->range()->boundingArea();
+    for (const QRectF& rect: rangeArea) {
+        QPainterPath path;
+        path.addRoundedRect(rect, 6, 6);
+
+        QColor fillColor = selectionColor;
+        fillColor.setAlpha(10);
+        painter->fillPath(path, fillColor);
+        painter->drawPath(path);
+    }
+}
+
 void NotationInteraction::moveSelection(MoveDirection d, MoveSelectionType type)
 {
     IF_ASSERT_FAILED(MoveDirection::Left == d || MoveDirection::Right == d) {
@@ -1907,6 +1938,79 @@ mu::async::Notification NotationInteraction::textEditingChanged() const
     return m_textEditingChanged;
 }
 
+void NotationInteraction::copySelection()
+{
+    if (!selection()->canCopy()) {
+        return;
+    }
+
+    QMimeData* mimeData = selection()->mimeData();
+    if (!mimeData) {
+        return;
+    }
+
+    QApplication::clipboard()->setMimeData(mimeData);
+}
+
+void NotationInteraction::pasteSelection(const Fraction& scale)
+{
+    m_undoStack->prepareChanges();
+
+    const QMimeData* mimeData = QApplication::clipboard()->mimeData();
+    score()->cmdPaste(mimeData, nullptr, scale);
+
+    m_undoStack->commitChanges();
+
+    m_selectionChanged.notify();
+}
+
+void NotationInteraction::swapSelection()
+{
+    if (!selection()->canCopy()) {
+        return;
+    }
+
+    Ms::Selection& selection = score()->selection();
+    QString mimeType = selection.mimeType();
+
+    if (mimeType == mimeStaffListFormat) { // determine size of clipboard selection
+        const QMimeData* mimeData = this->selection()->mimeData();
+        QByteArray data = mimeData ? mimeData->data(mimeStaffListFormat) : QByteArray();
+        XmlReader reader(data);
+        reader.readNextStartElement();
+
+        Fraction tickLen = Fraction(0, 1);
+        int stavesCount = 0;
+
+        if (reader.name() == "StaffList") {
+            tickLen = Fraction::fromTicks(reader.intAttribute("len", 0));
+            stavesCount = reader.intAttribute("staves", 0);
+        }
+
+        if (tickLen > Fraction(0, 1)) { // attempt to extend selection to match clipboard size
+            Segment* segment = selection.startSegment();
+            Fraction startTick = selection.tickStart() + tickLen;
+            Segment* segmentAfter = score()->tick2leftSegment(startTick);
+
+            int staffIndex = selection.staffStart() + stavesCount - 1;
+            if (staffIndex >= score()->nstaves()) {
+                staffIndex = score()->nstaves() - 1;
+            }
+
+            startTick = selection.tickStart();
+            Fraction endTick = startTick + tickLen;
+            selection.extendRangeSelection(segment, segmentAfter, staffIndex, startTick, endTick);
+            selection.update();
+        }
+    }
+
+    QByteArray currentSelectionBackup(selection.mimeData());
+    pasteSelection();
+    QMimeData* mimeData = new QMimeData();
+    mimeData->setData(mimeType, currentSelectionBackup);
+    QApplication::clipboard()->setMimeData(mimeData);
+}
+
 void NotationInteraction::deleteSelection()
 {
     m_undoStack->prepareChanges();
@@ -1938,4 +2042,26 @@ void NotationInteraction::transpose(const TransposeOptions& options)
     m_undoStack->commitChanges();
 
     m_notation->notifyAboutNotationChanged();
+}
+
+void NotationInteraction::swapVoices(int voiceIndex1, int voiceIndex2)
+{
+    if (voiceIndex1 == voiceIndex2) {
+        return;
+    }
+
+    if (!isVoiceIndexValid(voiceIndex1) || !isVoiceIndexValid(voiceIndex2)) {
+        return;
+    }
+
+    m_undoStack->prepareChanges();
+    score()->cmdExchangeVoice(voiceIndex1, voiceIndex2);
+    m_undoStack->commitChanges();
+
+    m_notation->notifyAboutNotationChanged();
+}
+
+bool NotationInteraction::isVoiceIndexValid(int voiceIndex) const
+{
+    return voiceIndex >= 0 && voiceIndex < VOICES;
 }

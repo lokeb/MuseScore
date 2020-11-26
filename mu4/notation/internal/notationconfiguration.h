@@ -23,9 +23,9 @@
 #include "modularity/ioc.h"
 #include "ui/iuiconfiguration.h"
 #include "iglobalconfiguration.h"
+#include "settings.h"
 
-namespace mu {
-namespace notation {
+namespace mu::notation {
 class NotationConfiguration : public INotationConfiguration
 {
     INJECT(notation, framework::IUiConfiguration, uiConfiguration)
@@ -50,6 +50,7 @@ public:
     io::path foregroundWallpaper() const override;
 
     QColor playbackCursorColor() const override;
+    QColor selectionColor() const override;
 
     int selectionProximity() const override;
 
@@ -65,12 +66,18 @@ public:
     float guiScaling() const override;
     float notationScaling() const override;
 
+    std::vector<std::string> toolbarActions(const std::string& toolbarName) const override;
+    void setToolbarActions(const std::string& toolbarName, const std::vector<std::string>& actions) override;
+
 private:
+    std::vector<std::string> parseToolbarActions(const std::string& actions) const;
+
+    framework::Settings::Key toolbarSettingsKey(const std::string& toolbarName) const;
+
     async::Channel<QColor> m_backgroundColorChanged;
     async::Channel<QColor> m_foregroundColorChanged;
     async::Channel<int> m_currentZoomChanged;
 };
-}
 }
 
 #endif // MU_NOTATION_NOTATIONCONFIGURATION_H

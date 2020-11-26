@@ -32,6 +32,7 @@
 #include "actions/iactionsregister.h"
 #include "internal/notationactions.h"
 #include "internal/notationreadersregister.h"
+#include "internal/notationwritersregister.h"
 #include "internal/mscznotationreader.h"
 #include "internal/msczmetareader.h"
 #include "internal/notationactionsrepositoryfactory.h"
@@ -45,6 +46,8 @@
 #include "view/notationswitchlistmodel.h"
 #include "view/partlistmodel.h"
 #include "view/searchpopupmodel.h"
+#include "view/noteinputbarcustomisemodel.h"
+#include "view/internal/abstractnoteinputbaritem.h"
 
 #include "ui/iinteractiveuriregister.h"
 #include "ui/uitypes.h"
@@ -83,6 +86,7 @@ void NotationModule::registerExports()
     std::shared_ptr<INotationReadersRegister> readers = std::make_shared<NotationReadersRegister>();
     readers->reg({ "mscz", "mscx" }, std::make_shared<MsczNotationReader>());
     framework::ioc()->registerExport<INotationReadersRegister>(moduleName(), readers);
+    framework::ioc()->registerExport<INotationWritersRegister>(moduleName(), std::make_shared<NotationWritersRegister>());
 
     Notation::init();
 }
@@ -116,6 +120,9 @@ void NotationModule::resolveImports()
 
         ir->registerUri(Uri("musescore://notation/parts"),
                         ContainerMeta(ContainerType::QmlDialog, "MuseScore/NotationScene/PartsDialog.qml"));
+
+        ir->registerUri(Uri("musescore://notation/noteinputbar/customise"),
+                        ContainerMeta(ContainerType::QmlDialog, "MuseScore/NotationScene/NoteInputBarCustomiseDialog.qml"));
     }
 }
 
@@ -135,6 +142,8 @@ void NotationModule::registerUiTypes()
     qmlRegisterType<NotationSwitchListModel>("MuseScore.NotationScene", 1, 0, "NotationSwitchListModel");
     qmlRegisterType<PartListModel>("MuseScore.NotationScene", 1, 0, "PartListModel");
     qmlRegisterType<SearchPopupModel>("MuseScore.NotationScene", 1, 0, "SearchPopupModel");
+    qmlRegisterType<NoteInputBarCustomiseModel>("MuseScore.NotationScene", 1, 0, "NoteInputBarCustomiseModel");
+    qmlRegisterType<AbstractNoteInputBarItem>("MuseScore.NotationScene", 1, 0, "NoteInputBarItem");
 
     qRegisterMetaType<EditStyle>("EditStyle");
     qRegisterMetaType<EditStaff>("EditStaff");

@@ -94,9 +94,9 @@ private:
     void paintCell(QPainter& p, const QRect& r, bool selected, bool current) const;
     void paintScoreElement(QPainter& p, Element* e, qreal spatium, bool alignToStaff) const;
 
-    static void paintPaletteElement(void* data, Element* e);
     static qreal paintStaff(QPainter& p, const QRect& rect, qreal spatium);
     static void paintTag(QPainter& painter, const QRect& rect, QString tag);
+    static void paintBackground(QPainter& p, const QRect& r, bool selected, bool current);
 
 public:
     PaletteCellIconEngine(PaletteCellConstPtr cell, qreal extraMag = 1.0)

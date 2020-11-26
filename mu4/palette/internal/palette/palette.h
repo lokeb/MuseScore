@@ -179,9 +179,11 @@ public:
     bool filter(const QString& text);
     void setShowContextMenu(bool val) { _showContextMenu = val; }
 
-    static qreal guiMag();
-    int gridWidthM() const { return hgrid * guiMag(); }
-    int gridHeightM() const { return vgrid * guiMag(); }
+    static qreal paletteScaling();
+    static void paintPaletteElement(void* data, Element* element);
+
+    int gridWidthM() const { return hgrid * paletteScaling(); }
+    int gridHeightM() const { return vgrid * paletteScaling(); }
 
     int getCurrentIdx() { return currentIdx; }
     void setCurrentIdx(int i) { currentIdx = i; }

@@ -17,20 +17,21 @@
 //  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 //=============================================================================
 #include "notationselection.h"
-#include "log.h"
 
 #include "libmscore/score.h"
+
+#include "notationselectionrange.h"
+
+#include "log.h"
+
+static const int SELECTION_SIDE_PADDING = 8;
 
 using namespace mu::notation;
 
 NotationSelection::NotationSelection(IGetScore* getScore)
     : m_getScore(getScore)
 {
-}
-
-Ms::Score* NotationSelection::score() const
-{
-    return m_getScore->score();
+    m_range = std::make_shared<NotationSelectionRange>(getScore);
 }
 
 bool NotationSelection::isNone() const
@@ -41,6 +42,24 @@ bool NotationSelection::isNone() const
 bool NotationSelection::isRange() const
 {
     return score()->selection().isRange();
+}
+
+bool NotationSelection::canCopy() const
+{
+    return score()->selection().canCopy();
+}
+
+QMimeData* NotationSelection::mimeData() const
+{
+    QString mimeType = score()->selection().mimeType();
+    if (mimeType.isEmpty()) {
+        return nullptr;
+    }
+
+    QMimeData* mimeData = new QMimeData();
+    mimeData->setData(mimeType, score()->selection().mimeData());
+
+    return mimeData;
 }
 
 Element* NotationSelection::element() const
@@ -57,19 +76,6 @@ std::vector<Element*> NotationSelection::elements() const
         els.push_back(e);
     }
     return els;
-}
-
-SelectionRange NotationSelection::range() const
-{
-    const Ms::Selection& selection = score()->selection();
-
-    SelectionRange range;
-    range.startStaffIndex = selection.staffStart();
-    range.endStaffIndex = selection.staffEnd();
-    range.startTick = selection.tickStart();
-    range.endTick = selection.tickEnd();
-
-    return range;
 }
 
 QRectF NotationSelection::canvasBoundingRect() const
@@ -99,4 +105,14 @@ QRectF NotationSelection::canvasBoundingRect() const
     }
 
     return rect;
+}
+
+INotationSelectionRangePtr NotationSelection::range() const
+{
+    return m_range;
+}
+
+Ms::Score* NotationSelection::score() const
+{
+    return m_getScore->score();
 }

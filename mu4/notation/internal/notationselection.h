@@ -28,8 +28,7 @@ namespace Ms {
 class Score;
 }
 
-namespace mu {
-namespace notation {
+namespace mu::notation {
 class NotationSelection : public INotationSelection
 {
 public:
@@ -38,20 +37,22 @@ public:
     bool isNone() const override;
     bool isRange() const override;
 
+    bool canCopy() const override;
+    QMimeData* mimeData() const override;
+
     Element* element() const override;
     std::vector<Element*> elements() const override;
 
-    SelectionRange range() const override;
-
     QRectF canvasBoundingRect() const override;
 
-private:
+    INotationSelectionRangePtr range() const override;
 
+private:
     Ms::Score* score() const;
 
     IGetScore* m_getScore = nullptr;
+    INotationSelectionRangePtr m_range;
 };
-}
 }
 
 #endif // MU_NOTATION_NOTATIONSELECTION_H

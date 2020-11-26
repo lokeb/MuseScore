@@ -58,7 +58,7 @@
 #include "page.h"
 #include "pedal.h"
 #include "rehearsalmark.h"
-#include "repeat.h"
+#include "measurerepeat.h"
 #include "rest.h"
 #include "score.h"
 #include "segment.h"
@@ -1106,7 +1106,7 @@ Element* Element::create(ElementType type, Score* score)
     case ElementType::LAYOUT_BREAK:      return new LayoutBreak(score);
     case ElementType::MARKER:            return new Marker(score);
     case ElementType::JUMP:              return new Jump(score);
-    case ElementType::REPEAT_MEASURE:    return new RepeatMeasure(score);
+    case ElementType::MEASURE_REPEAT:    return new MeasureRepeat(score);
     case ElementType::ICON:              return new Icon(score);
     case ElementType::NOTE:              return new Note(score);
     case ElementType::SYMBOL:            return new Symbol(score);
@@ -1227,6 +1227,25 @@ void collectElements(void* data, Element* e)
 {
     QList<Element*>* el = static_cast<QList<Element*>*>(data);
     el->append(e);
+}
+
+void paintElement(QPainter& painter, const Element* element)
+{
+    QPointF pos(element->pagePos());
+    painter.translate(pos);
+    element->draw(&painter);
+    painter.translate(-pos);
+}
+
+void paintElements(QPainter& painter, const QList<Element*>& elements)
+{
+    for (Element* element : elements) {
+        if (!element->visible()) {
+            continue;
+        }
+
+        paintElement(painter, element);
+    }
 }
 
 //---------------------------------------------------------

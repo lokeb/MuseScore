@@ -29,6 +29,9 @@
 
 #include "internal/mu4paletteadapter.h"
 #include "internal/paletteconfiguration.h"
+#include "internal/palette/masterpalette.h"
+#include "internal/paletteactionscontroller.h"
+#include "internal/paletteactions.h"
 
 #include "view/paletterootmodel.h"
 #include "view/palettepropertiesmodel.h"
@@ -42,11 +45,13 @@
 #include "libmscore/score.h"
 #include "libmscore/sym.h"
 
+#include "actions/iactionsregister.h"
+
 using namespace mu::palette;
 using namespace mu::framework;
 
-static std::shared_ptr<MU4PaletteAdapter> m_adapter = std::make_shared<MU4PaletteAdapter>();
-static std::shared_ptr<PaletteConfiguration> m_configuration = std::make_shared<PaletteConfiguration>();
+static std::shared_ptr<MU4PaletteAdapter> s_adapter = std::make_shared<MU4PaletteAdapter>();
+static std::shared_ptr<PaletteActionsController> s_actionsController = std::make_shared<PaletteActionsController>();
 
 static void palette_init_qrc()
 {
@@ -61,10 +66,10 @@ std::string PaletteModule::moduleName() const
 void PaletteModule::registerExports()
 {
 #ifdef BUILD_UI_MU4
-    framework::ioc()->registerExport<IPaletteAdapter>(moduleName(), m_adapter);
+    framework::ioc()->registerExport<IPaletteAdapter>(moduleName(), s_adapter);
 #endif
 
-    framework::ioc()->registerExport<IPaletteConfiguration>(moduleName(), m_configuration);
+    framework::ioc()->registerExport<IPaletteConfiguration>(moduleName(), std::make_shared<PaletteConfiguration>());
 
     // create a score for internal use
     using namespace Ms;
@@ -86,8 +91,16 @@ void PaletteModule::resolveImports()
         workspaceStreams->regStream("PaletteBox", std::make_shared<WorkspacePaletteStream>());
     }
 
+    auto ar = framework::ioc()->resolve<actions::IActionsRegister>(moduleName());
+    if (ar) {
+        ar->reg(std::make_shared<PaletteActions>());
+    }
+
     auto ir = ioc()->resolve<IInteractiveUriRegister>(moduleName());
     if (ir) {
+        ir->registerUri(Uri("musescore://palette/masterpalette"),
+                        ContainerMeta(ContainerType::QWidgetDialog, qRegisterMetaType<Ms::MasterPalette>("MasterPallette")));
+
         ir->registerUri(Uri("musescore://palette/properties"),
                         ContainerMeta(ContainerType::QmlDialog, "MuseScore/Palette/PalettePropertiesDialog.qml"));
 
@@ -122,10 +135,11 @@ void PaletteModule::onInit()
 {
     using namespace Ms;
 
-    // init configuration
-    m_configuration->init();
-
     // load workspace
     PaletteWorkspaceSetup w;
     w.setup();
+
+#ifdef BUILD_UI_MU4
+    s_actionsController->init();
+#endif
 }

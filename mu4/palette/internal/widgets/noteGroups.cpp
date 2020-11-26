@@ -37,6 +37,7 @@ Score* NoteGroups::createScore(int n, TDuration::DurationType t, std::vector<Cho
     c.addPart("voice");
     c.move(0, Fraction(0,1));
     c.addKeySig(Key::C);
+
     TimeSig* nts = c.addTimeSig(_sig);
     if (!_z.isEmpty()) {
         nts->setNumeratorString(_z);
@@ -92,7 +93,7 @@ NoteGroups::NoteGroups(QWidget* parent)
     iconPalette->setName(QT_TRANSLATE_NOOP("palette", "Beam Properties"));
     iconPalette->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
     iconPalette->setGrid(27, 40);
-    iconPalette->setMinimumWidth(27 * 4 * Palette::guiMag() + 1);       // enough room for all icons, with roundoff
+    iconPalette->setMinimumWidth(27 * 4 * Palette::paletteScaling() + 1);       // enough room for all icons, with roundoff
     iconPalette->setDrawGrid(true);
     populateIconPalette(iconPalette, bpa);
     iconPalette->setReadOnly(true);

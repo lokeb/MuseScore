@@ -26,7 +26,6 @@
 #include "log.h"
 #include "modularity/ioc.h"
 #include "ui/internal/uiengine.h"
-#include "settings.h"
 #include "version.h"
 #include "config.h"
 
@@ -60,8 +59,6 @@ int AppShell::run(int argc, char** argv, std::function<void()> moduleSetup)
     QCoreApplication::setApplicationVersion(QString::fromStdString(framework::Version::fullVersion()));
 
     moduleSetup();
-
-    framework::settings()->load();
 
     QQmlApplicationEngine* engine = new QQmlApplicationEngine();
     //! NOTE Move ownership to UiEngine

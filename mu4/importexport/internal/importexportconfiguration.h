@@ -21,13 +21,13 @@
 
 #include "../iimportexportconfiguration.h"
 
-namespace mu {
-namespace importexport {
+namespace mu::importexport {
 class ImportexportConfiguration : public IImportexportConfiguration
 {
 public:
+    void init();
 
-    int midiShortestNote() const override;    //ticks
+    int midiShortestNote() const override; // ticks
 
     std::string importOvertuneCharset() const override;
 
@@ -35,8 +35,15 @@ public:
 
     bool musicxmlImportBreaks() const override;
     bool musicxmlImportLayout() const override;
+    bool musicxmlExportLayout() const override;
+
+    MusicxmlExportBreaksType musicxmlExportBreaksType() const override;
+
+    int exportPdfDpiResolution() const override;
+    double exportPngDpiResolution() const override;
+
+    bool exportPngWithTransparentBackground() const override;
 };
-}
 }
 
 #endif // MU_IMPORTEXPORT_IMPORTEXPORTCONFIGURATION_H

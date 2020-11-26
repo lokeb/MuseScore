@@ -46,7 +46,7 @@
 #include "libmscore/breath.h"
 #include "libmscore/arpeggio.h"
 #include "libmscore/tremolo.h"
-#include "libmscore/repeat.h"
+#include "libmscore/measurerepeat.h"
 #include "libmscore/tempotext.h"
 #include "libmscore/glissando.h"
 #include "libmscore/articulation.h"
@@ -642,11 +642,11 @@ PalettePanel* PaletteCreator::newRepeatsPalettePanel()
     sp->setGrid(75, 28);
     sp->setDrawGrid(true);
 
-    RepeatMeasure* rm = new RepeatMeasure(gscore);
+    MeasureRepeat* rm = new MeasureRepeat(gscore);
     sp->append(rm, mu::qtrc("symUserNames", Sym::symUserNames[int(SymId::repeat1Bar)]));
 
     for (int i = 0; i < markerTypeTableSize(); i++) {
-        if (markerTypeTable[i].type == Marker::Type::CODETTA) {   //not in smufl
+        if (markerTypeTable[i].type == Marker::Type::CODETTA) {   // not in SMuFL
             continue;
         }
 
@@ -708,6 +708,11 @@ PalettePanel* PaletteCreator::newLayoutPalettePanel()
     cell = sp->append(lb, QT_TRANSLATE_NOOP("palette", "Section break"));
     cell->mag = 1.2;
 
+    lb = new LayoutBreak(gscore);
+    lb->setLayoutBreakType(LayoutBreak::Type::NOBREAK);
+    cell = sp->append(lb, QT_TRANSLATE_NOOP("Palette", "Group measures"));
+    cell->mag = 1.2;
+
     qreal _spatium = gscore->spatium();
     Spacer* spacer = new Spacer(gscore);
     spacer->setSpacerType(SpacerType::DOWN);
@@ -730,7 +735,7 @@ PalettePanel* PaletteCreator::newLayoutPalettePanel()
     StaffTypeChange* stc = new StaffTypeChange(gscore);
     sp->append(stc, QT_TRANSLATE_NOOP("palette", "Staff type change"));
 
-    if (globalConfiguration()->enableExperimental()) {
+    if (configuration()->enableExperimental()) {
         static const IconAction bpa[] = {
             { IconType::VFRAME,   "insert-vbox" },
             { IconType::HFRAME,   "insert-hbox" },

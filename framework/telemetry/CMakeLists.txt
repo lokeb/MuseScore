@@ -18,32 +18,80 @@
 #=============================================================================
 
 set(MODULE telemetry)
-set(LIBRARY_TYPE STATIC)
-message(STATUS "Configuring " ${MODULE})
 
-include_directories(
-      ${PROJECT_SOURCE_DIR}/thirdparty
-      ${PROJECT_SOURCE_DIR}/mscore
-      ${PROJECT_SOURCE_DIR}/framework/global
-      ${PROJECT_BINARY_DIR}
-      )
+set(MODULE_SRC
+    ${CMAKE_CURRENT_LIST_DIR}/telemetrysetup.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/telemetrysetup.h
+    ${CMAKE_CURRENT_LIST_DIR}/itelemetryservice.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/actioneventobserver.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/actioneventobserver.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/telemetryservice.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/telemetryservice.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/telemetrypermissiondialog.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/telemetrypermissiondialog.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/telemetrypermissionmodel.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/telemetrypermissionmodel.h
+    )
 
-file(GLOB_RECURSE telemetry_SOURCES RELATIVE ${CMAKE_CURRENT_LIST_DIR} *.cpp)
-file(GLOB_RECURSE telemetry_HEADERS RELATIVE ${CMAKE_CURRENT_LIST_DIR} *.h)
+set(MODULE_QRC telemetry.qrc)
 
-find_package(Qt5QuickCompiler)
-qtquick_compiler_add_resources(RCC_SOURCES telemetry_resources.qrc)
+set(MODULE_QML_IMPORT ${CMAKE_CURRENT_LIST_DIR}/qml )
 
-add_library(${MODULE} ${LIBRARY_TYPE}
-    ${telemetry_SOURCES}
-    ${telemetry_HEADERS}
-    ${RCC_SOURCES}
+set(MODULE_INCLUDE
+    ${PROJECT_SOURCE_DIR}/thirdparty/google_crashpad_client
+    ${PROJECT_SOURCE_DIR}/thirdparty/google_crashpad_client/third_party/mini_chromium/mini_chromium
 )
 
-target_link_libraries(${MODULE} global qt-google-analytics)
+add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/qt-google-analytics qt-google-analytics)
 
-if (MSVC)
-  set_target_properties (${MODULE} PROPERTIES
-    COMPILE_FLAGS "/wd4127 /wd26439 /wd5999" # ToDo for Qt 5.15: "... /wd26444 /wd26451 /wd26495 /wd26498 /wd26812" ??
-  )
-endif (MSVC)
+
+set(MODULE_LINK
+    qt-google-analytics
+)
+
+# --- Crashpad ---
+# Not building with MinGW, so turned off for MinGW
+include(${PROJECT_SOURCE_DIR}/build/compiler.cmake)
+set(BUILD_CRASHPAD_CLIENT ON)
+if (COMPILER_IS_MINGW)
+    set(BUILD_CRASHPAD_CLIENT OFF)
+endif(COMPILER_IS_MINGW)
+
+if (BUILD_CRASHPAD_CLIENT)
+
+    set(MODULE_SRC ${MODULE_SRC}
+        ${CMAKE_CURRENT_LIST_DIR}/internal/dump/crashhandler.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/internal/dump/crashhandler.h
+    )
+
+    set(MODULE_INCLUDE ${MODULE_INCLUDE}
+        ${PROJECT_SOURCE_DIR}/thirdparty/google_crashpad_client
+        ${PROJECT_SOURCE_DIR}/thirdparty/google_crashpad_client/third_party/mini_chromium/mini_chromium
+    )
+
+    set(MODULE_DEF ${MODULE_DEF}
+        -DBUILD_CRASHPAD_CLIENT
+    )
+
+    add_subdirectory(${PROJECT_SOURCE_DIR}/thirdparty/google_crashpad_client google_crashpad_client)
+
+    set(MODULE_LINK ${MODULE_LINK}
+        gcrashpad
+    )
+
+endif(BUILD_CRASHPAD_CLIENT)
+# ----------------
+
+
+include(${PROJECT_SOURCE_DIR}/build/module.cmake)
+
+# === Install crashpad handler ===
+set(CPAD_ROOT_PATH ${CMAKE_CURRENT_LIST_DIR}/crashpad_handler)
+if (PLATFORM_IS_LINUX)
+    install(PROGRAMS ${CPAD_ROOT_PATH}/linux/x86-64/crashpad_handler DESTINATION bin)
+elseif(PLATFORM_IS_WINDOWS)
+    install(PROGRAMS ${CPAD_ROOT_PATH}/windows/x86-64/crashpad_handler.exe DESTINATION bin)
+elseif(PLATFORM_IS_MACOS)
+    install(PROGRAMS ${CPAD_ROOT_PATH}/macos/x86-64/crashpad_handler DESTINATION ${Mscore_SHARE_NAME}Contents/MacOS)
+endif()
+

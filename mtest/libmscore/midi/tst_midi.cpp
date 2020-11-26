@@ -61,6 +61,7 @@ private slots:
     void midiPortExport() { midiExportTestRef("testMidiPort"); }
     void midiArpeggio() { midiExportTestRef("testArpeggio"); }
     void midiMutedUnison() { midiExportTestRef("testMutedUnison"); }
+    void midiMeasureRepeats() { midiExportTestRef("testMeasureRepeats"); }
     void midi184376ExportMidiInitialKeySig()
     {
         midiExportTestRef("testInitialKeySigThenRepeatToMeas2");        // tick 0 has Bb keysig.  Meas 2 has no key sig. Meas 2 repeats back to start of Meas 2.  Result should have initial Bb keysig
@@ -137,6 +138,7 @@ void TestMidi::events_data()
 //      QTest::newRow("testPedal") <<  "testPedal";
     // multi note tremolo
     QTest::newRow("testMultiNoteTremolo") << "testMultiNoteTremolo";
+    QTest::newRow("testMultiNoteTremoloTuplet") << "testMultiNoteTremoloTuplet";
     // Test Pauses
     QTest::newRow("testPauses") << "testPauses";
     QTest::newRow("testPausesRepeats") << "testPausesRepeats";

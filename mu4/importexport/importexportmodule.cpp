@@ -21,6 +21,7 @@
 #include "log.h"
 #include "config.h"
 #include "modularity/ioc.h"
+
 #include "notation/inotationreadersregister.h"
 #include "internal/musicxmlreader.h"
 #include "internal/notationmidireader.h"
@@ -31,10 +32,25 @@
 #include "internal/notationbwwreader.h"
 #include "internal/guitarproreader.h"
 
+#include "notation/inotationwritersregister.h"
+#include "internal/musicxmlwriter.h"
+#include "internal/notationmidiwriter.h"
+#include "internal/pdfwriter.h"
+#include "internal/pngwriter.h"
+#include "internal/svgwriter.h"
+#include "internal/mp3writer.h"
+#include "internal/wavewriter.h"
+#include "internal/oggwriter.h"
+#include "internal/flacwriter.h"
+#include "internal/musicxmlwriter.h"
+#include "internal/mxlwriter.h"
+
 #include "internal/importexportconfiguration.h"
 
 using namespace mu::importexport;
 using namespace mu::notation;
+
+static std::shared_ptr<ImportexportConfiguration> s_configuration = std::make_shared<ImportexportConfiguration>();
 
 std::string ImportExportModule::moduleName() const
 {
@@ -43,11 +59,13 @@ std::string ImportExportModule::moduleName() const
 
 void ImportExportModule::registerExports()
 {
-    framework::ioc()->registerExport<IImportexportConfiguration>(moduleName(), new ImportexportConfiguration());
+    framework::ioc()->registerExport<IImportexportConfiguration>(moduleName(), s_configuration);
 }
 
 void ImportExportModule::onInit()
 {
+    s_configuration->init();
+
     //! NOTE The "importexport" module is linked when the BUILD_UI_MU4 is off
     //! So that the import/export implementation is linked and used in the old code.
     //! But of course there is no "INotationReadersRegister"
@@ -66,5 +84,22 @@ void ImportExportModule::onInit()
     readers->reg({ "ove", "scw" }, std::make_shared<OveReader>());
     readers->reg({ "bmw", "bww" }, std::make_shared<NotationBwwReader>());
     readers->reg({ "gtp", "gp3", "gp4", "gp5", "gpx", "gp", "ptb" }, std::make_shared<GuitarProReader>());
+
+    auto writers = framework::ioc()->resolve<INotationWritersRegister>(moduleName());
+    IF_ASSERT_FAILED(writers) {
+        return;
+    }
+
+    writers->reg({ "musicxml", "xml" }, std::make_shared<MusicXmlWriter>());
+    writers->reg({ "mxl" }, std::make_shared<MxlWriter>());
+    writers->reg({ "mid", "midi", "kar" }, std::make_shared<NotationMidiWriter>());
+    writers->reg({ "pdf" }, std::make_shared<PdfWriter>());
+    writers->reg({ "svg" }, std::make_shared<SvgWriter>());
+    writers->reg({ "png" }, std::make_shared<PngWriter>());
+    writers->reg({ "wav" }, std::make_shared<WaveWriter>());
+    writers->reg({ "mp3" }, std::make_shared<Mp3Writer>());
+    writers->reg({ "ogg" }, std::make_shared<OggWriter>());
+    writers->reg({ "flac" }, std::make_shared<FlacWriter>());
+
 #endif
 }

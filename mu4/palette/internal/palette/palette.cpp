@@ -252,9 +252,9 @@ void Palette::setMag(qreal val)
 //   guiMag
 //---------------------------------------------------------
 
-qreal Palette::guiMag()
+qreal Palette::paletteScaling()
 {
-    return configuration()->guiScale();
+    return configuration()->paletteScaling();
 }
 
 //---------------------------------------------------------
@@ -357,7 +357,7 @@ void Palette::setGrid(int hh, int vv)
     hgrid = hh;
     vgrid = vv;
     QSize s(hgrid, vgrid);
-    s *= guiMag();
+    s *= paletteScaling();
     setSizeIncrement(s);
     setBaseSize(s);
     setMinimumSize(s);
@@ -805,13 +805,25 @@ PaletteCell* Palette::add(int idx, Element* s, const QString& name, QString tag,
 //   paintPaletteElement
 //---------------------------------------------------------
 
-static void paintPaletteElement(void* data, Element* e)
+void Palette::paintPaletteElement(void* data, Element* element)
 {
-    QPainter* p = static_cast<QPainter*>(data);
-    p->save();
-    p->translate(e->pos());
-    e->draw(p);
-    p->restore();
+    QPainter* painter = static_cast<QPainter*>(data);
+    painter->save();
+    painter->translate(element->pos()); // necessary for drawing child elements
+
+    QColor color = configuration()->elementsColor();
+
+    QColor colorBackup = element->color();
+    element->undoSetColor(color);
+
+    QColor frameColorBackup = element->getProperty(Pid::FRAME_FG_COLOR).value<QColor>();
+    element->undoChangeProperty(Pid::FRAME_FG_COLOR, color);
+
+    element->draw(painter);
+
+    element->undoSetColor(colorBackup);
+    element->undoChangeProperty(Pid::FRAME_FG_COLOR, frameColorBackup);
+    painter->restore();
 }
 
 //---------------------------------------------------------
@@ -821,21 +833,16 @@ static void paintPaletteElement(void* data, Element* e)
 void Palette::paintEvent(QPaintEvent* /*event*/)
 {
     qreal _spatium = gscore->spatium();
-    qreal magS     = PALETTE_SPATIUM * extraMag * guiMag();
+    qreal magS     = PALETTE_SPATIUM * extraMag * paletteScaling();
     qreal mag      = magS / _spatium;
-//      qreal mag      = PALETTE_SPATIUM * extraMag / _spatium;
     gscore->setSpatium(SPATIUM20);
 
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing, true);
 
-    QColor bgColor = configuration()->foregroundColor();
-#if 1
-    p.setBrush(bgColor);
+    p.setPen(configuration()->gridColor());
     p.drawRoundedRect(0, 0, width(), height(), 2, 2);
-#else
-    p.fillRect(event->rect(), QColor(0xf6, 0xf0, 0xda));
-#endif
+
     //
     // draw grid
     //
@@ -849,7 +856,6 @@ void Palette::paintEvent(QPaintEvent* /*event*/)
     int hhgrid = hgridM + (rightBorder / columns());
 
     if (_drawGrid) {
-        p.setPen(Qt::gray);
         for (int row = 1; row < rows(); ++row) {
             int x2 = row < rows() - 1 ? columns() * hhgrid : width();
             int y  = row * vgridM;
@@ -866,9 +872,7 @@ void Palette::paintEvent(QPaintEvent* /*event*/)
     //
     // draw symbols
     //
-
-    // QPen pen(palette().color(QPalette::Normal, QPalette::Text));
-    QPen pen(Qt::black);
+    QPen pen(configuration()->elementsColor());
     pen.setWidthF(MScore::defaultStyle().value(Sid::staffLineWidth).toDouble() * magS);
 
     for (int idx = 0; idx < ccp()->size(); ++idx) {
@@ -876,7 +880,7 @@ void Palette::paintEvent(QPaintEvent* /*event*/)
         QRect r      = idxRect(idx);
         QRect rShift = r.translated(0, yoffset);
         p.setPen(pen);
-        QColor c(MScore::selectColor[0]);
+        QColor c(configuration()->accentColor());
 
         if (idx == selectedIdx) {
             c.setAlphaF(0.5);
@@ -896,7 +900,7 @@ void Palette::paintEvent(QPaintEvent* /*event*/)
 
         QString tag = cc->tag;
         if (!tag.isEmpty()) {
-            p.setPen(Qt::darkGray);
+            p.setPen(configuration()->gridColor());
             QFont f(p.font());
             f.setPointSize(12);
             p.setFont(f);
@@ -930,6 +934,7 @@ void Palette::paintEvent(QPaintEvent* /*event*/)
             qreal w = hhgrid - 6;
             for (int i = 0; i < 5; ++i) {
                 qreal yy = y + i * magS;
+                p.setPen(configuration()->elementsColor());
                 p.drawLine(QLineF(x, yy, x + w, yy));
             }
         }
@@ -981,10 +986,8 @@ void Palette::paintEvent(QPaintEvent* /*event*/)
 QPixmap Palette::pixmap(int paletteIdx) const
 {
     qreal _spatium = gscore->spatium();
-    qreal magS     = PALETTE_SPATIUM * extraMag * guiMag();
+    qreal magS     = PALETTE_SPATIUM * extraMag * paletteScaling();
     qreal mag      = magS / _spatium;
-//      qreal guiMag = guiScaling * preferences.getDouble(PREF_APP_PALETTESCALE);
-//      qreal mag      = PALETTE_SPATIUM * extraMag * guiMag / _spatium;
     PaletteCell* c = cellAt(paletteIdx);
     if (!c || !c->element) {
         return QPixmap();
@@ -1002,7 +1005,7 @@ QPixmap Palette::pixmap(int paletteIdx) const
     }
 
     QPixmap pm(w, h);
-    pm.fill(Qt::transparent);
+    pm.fill(configuration()->elementsBackgroundColor());
     QPainter p(&pm);
     p.setRenderHint(QPainter::Antialiasing, true);
 
@@ -1433,7 +1436,7 @@ int Palette::heightForWidth(int w) const
     if (rows <= 0) {
         rows = 1;
     }
-    qreal magS = PALETTE_SPATIUM * extraMag * guiMag();
+    qreal magS = PALETTE_SPATIUM * extraMag * paletteScaling();
     int h = lrint(_yOffset * 2 * magS);
     return rows * vgridM + h;
 }

@@ -21,11 +21,11 @@
 
 #include "modularity/imoduleexport.h"
 
-namespace mu {
-namespace importexport {
+namespace mu::importexport {
 class IImportexportConfiguration : MODULE_EXPORT_INTERFACE
 {
     INTERFACE_ID(IImportexportConfiguration)
+
 public:
     virtual ~IImportexportConfiguration() = default;
 
@@ -41,8 +41,21 @@ public:
     // MusicXml
     virtual bool musicxmlImportBreaks() const = 0;
     virtual bool musicxmlImportLayout() const = 0;
+    virtual bool musicxmlExportLayout() const = 0;
+
+    enum class MusicxmlExportBreaksType {
+        All, Manual, No
+    };
+
+    virtual MusicxmlExportBreaksType musicxmlExportBreaksType() const = 0;
+
+    // Pdf
+    virtual int exportPdfDpiResolution() const = 0;
+
+    // Png
+    virtual double exportPngDpiResolution() const = 0;
+    virtual bool exportPngWithTransparentBackground() const = 0;
 };
-}
 }
 
 #endif // MU_IMPORTEXPORT_IIMPORTEXPORTCONFIGURATION_H

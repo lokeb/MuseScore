@@ -123,6 +123,17 @@ set(CMAKE_AUTOMOC     TRUE)
 set(USE_SSE           TRUE)
 
 set(MUSESCORE_REVISION "" CACHE STRING "Build revision")
+
+# Set revision for local builds
+# Before need run 'make revision' or 'msvc_build.bat revision'
+if (MUSESCORE_REVISION STREQUAL "")
+    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/local_build_revision.env")
+        file(READ "${CMAKE_CURRENT_LIST_DIR}/local_build_revision.env" MUSESCORE_REVISION)
+        STRING(REGEX REPLACE "\n" "" MUSESCORE_REVISION "${MUSESCORE_REVISION}")
+    endif()
+endif(MUSESCORE_REVISION STREQUAL "")
+message(STATUS "MUSESCORE_REVISION: ${MUSESCORE_REVISION}")
+
 add_definitions(-DMUSESCORE_REVISION="${MUSESCORE_REVISION}")
 
 # Setup version number and general build settings
@@ -193,7 +204,8 @@ option(COVERAGE "Build with instrumentation to record code coverage." OFF)
 option(BUILD_64 "Build 64 bit version of editor" ON)
 option(BUILD_AUTOUPDATE "Build with autoupdate support" OFF)
 option(BUILD_CRASH_REPORTER "Build with crash reporter" OFF)
-set(CRASH_REPORT_URL "http://127.0.0.1:1127/post" CACHE STRING "URL where to send crash reports (valid if BUILD_CRASH_REPORTER is set to ON)")
+# default crash server url - Sentry MuseScore sandbox
+set(CRASH_REPORT_URL "https://sentry.musescore.org/api/3/minidump/?sentry_key=1260147a791c40349bbf717b94dc29c4" CACHE STRING "URL where to send crash reports")
 option(BUILD_TELEMETRY_MODULE "Build with telemetry module" ON)
 set(TELEMETRY_TRACK_ID "" CACHE STRING "Telemetry track id")
 option(BUILD_PORTABLEAPPS "Windows build for PortableApps.com" OFF)
@@ -211,6 +223,8 @@ add_definitions(-DQT_QML_DEBUG)
 add_definitions(-D_USE_MATH_DEFINES)
 
 message("[cmake] BUILD_UI_MU4: ${BUILD_UI_MU4}")
+
+message(STATUS "CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
 
 if (MSCORE_UNSTABLE OR TELEMETRY_TRACK_ID STREQUAL "")
       message("Telemetry feature is disabled")

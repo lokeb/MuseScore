@@ -28,9 +28,26 @@ using namespace mu::actions;
 void NotationActionController::init()
 {
     dispatcher()->reg(this, "note-input", this, &NotationActionController::toggleNoteInput);
+
+    dispatcher()->reg(this, "note-longa", [this]() { padNote(Pad::NOTE00); });
+    dispatcher()->reg(this, "note-breve", [this]() { padNote(Pad::NOTE0); });
+    dispatcher()->reg(this, "pad-note-1", [this]() { padNote(Pad::NOTE1); });
+    dispatcher()->reg(this, "pad-note-2", [this]() { padNote(Pad::NOTE2); });
     dispatcher()->reg(this, "pad-note-4", [this]() { padNote(Pad::NOTE4); });
     dispatcher()->reg(this, "pad-note-8", [this]() { padNote(Pad::NOTE8); });
     dispatcher()->reg(this, "pad-note-16", [this]() { padNote(Pad::NOTE16); });
+    dispatcher()->reg(this, "pad-note-32", [this]() { padNote(Pad::NOTE32); });
+    dispatcher()->reg(this, "pad-note-64", [this]() { padNote(Pad::NOTE64); });
+    dispatcher()->reg(this, "pad-note-128", [this]() { padNote(Pad::NOTE128); });
+    dispatcher()->reg(this, "pad-note-256", [this]() { padNote(Pad::NOTE256); });
+    dispatcher()->reg(this, "pad-note-512", [this]() { padNote(Pad::NOTE512); });
+    dispatcher()->reg(this, "pad-note-1024", [this]() { padNote(Pad::NOTE1024); });
+    dispatcher()->reg(this, "pad-dot", [this]() { padNote(Pad::DOT); });
+    dispatcher()->reg(this, "pad-dotdot", [this]() { padNote(Pad::DOTDOT); });
+    dispatcher()->reg(this, "pad-dot3", [this]() { padNote(Pad::DOT3); });
+    dispatcher()->reg(this, "pad-dot4", [this]() { padNote(Pad::DOT4); });
+    dispatcher()->reg(this, "pad-rest", [this]() { padNote(Pad::REST); });
+
     dispatcher()->reg(this, "put-note", this, &NotationActionController::putNote);
 
     //! NOTE For historical reasons, the name of the action does not match what needs to be done.
@@ -47,6 +64,13 @@ void NotationActionController::init()
     dispatcher()->reg(this, "pitch-up-octave", [this](const ActionName& action) { moveAction(action); });
     dispatcher()->reg(this, "pitch-down-octave", [this](const ActionName& action) { moveAction(action); });
 
+    dispatcher()->reg(this, "cut", this, &NotationActionController::cutSelection);
+    dispatcher()->reg(this, "copy", this, &NotationActionController::copySelection);
+    dispatcher()->reg(this, "paste", [this]() { pasteSelection(PastingType::Default); });
+    dispatcher()->reg(this, "paste-half", [this]() { pasteSelection(PastingType::Half); });
+    dispatcher()->reg(this, "paste-double", [this]() { pasteSelection(PastingType::Double); });
+    dispatcher()->reg(this, "paste-special", [this]() { pasteSelection(PastingType::Special); });
+    dispatcher()->reg(this, "swap", this, &NotationActionController::swapSelection);
     dispatcher()->reg(this, "delete", this, &NotationActionController::deleteSelection);
     dispatcher()->reg(this, "undo", this, &NotationActionController::undo);
     dispatcher()->reg(this, "redo", this, &NotationActionController::redo);
@@ -58,6 +82,13 @@ void NotationActionController::init()
     dispatcher()->reg(this, "edit-info", this, &NotationActionController::openScoreProperties);
     dispatcher()->reg(this, "transpose", this, &NotationActionController::openTransposeDialog);
     dispatcher()->reg(this, "parts", this, &NotationActionController::openPartsDialog);
+
+    dispatcher()->reg(this, "voice-x12", [this]() { swapVoices(0, 1); });
+    dispatcher()->reg(this, "voice-x13", [this]() { swapVoices(0, 2); });
+    dispatcher()->reg(this, "voice-x14", [this]() { swapVoices(0, 3); });
+    dispatcher()->reg(this, "voice-x23", [this]() { swapVoices(1, 2); });
+    dispatcher()->reg(this, "voice-x24", [this]() { swapVoices(1, 3); });
+    dispatcher()->reg(this, "voice-x34", [this]() { swapVoices(2, 3); });
 }
 
 bool NotationActionController::canReceiveAction(const actions::ActionName&) const
@@ -65,7 +96,7 @@ bool NotationActionController::canReceiveAction(const actions::ActionName&) cons
     return true;
 }
 
-std::shared_ptr<INotation> NotationActionController::currentNotation() const
+INotationPtr NotationActionController::currentNotation() const
 {
     return globalContext()->currentNotation();
 }
@@ -211,6 +242,66 @@ void NotationActionController::moveText(INotationInteractionPtr interaction, con
     interaction->moveText(direction, quickly);
 }
 
+void NotationActionController::swapVoices(int voiceIndex1, int voiceIndex2)
+{
+    auto interaction = currentNotationInteraction();
+    if (!interaction) {
+        return;
+    }
+
+    interaction->swapVoices(voiceIndex1, voiceIndex2);
+}
+
+void NotationActionController::cutSelection()
+{
+    copySelection();
+    deleteSelection();
+}
+
+void NotationActionController::copySelection()
+{
+    auto interaction = currentNotationInteraction();
+    if (!interaction) {
+        return;
+    }
+
+    interaction->copySelection();
+}
+
+void NotationActionController::pasteSelection(PastingType type)
+{
+    auto interaction = currentNotationInteraction();
+    if (!interaction) {
+        return;
+    }
+
+    Fraction scale = resolvePastingScale(interaction, type);
+    interaction->pasteSelection(scale);
+}
+
+Fraction NotationActionController::resolvePastingScale(const INotationInteractionPtr& interaction, PastingType type) const
+{
+    const Fraction DEFAULT_SCALE(1, 1);
+
+    switch (type) {
+    case PastingType::Default: return DEFAULT_SCALE;
+    case PastingType::Half: return Fraction(1, 2);
+    case PastingType::Double: return Fraction(2, 1);
+    case PastingType::Special:
+        Fraction scale = DEFAULT_SCALE;
+        Fraction duration = interaction->inputState()->duration().fraction();
+
+        if (duration.isValid() && !duration.isZero()) {
+            scale = duration * 4;
+            scale.reduce();
+        }
+
+        return scale;
+    }
+
+    return DEFAULT_SCALE;
+}
+
 void NotationActionController::deleteSelection()
 {
     auto interaction = currentNotationInteraction();
@@ -219,6 +310,16 @@ void NotationActionController::deleteSelection()
     }
 
     interaction->deleteSelection();
+}
+
+void NotationActionController::swapSelection()
+{
+    auto interaction = currentNotationInteraction();
+    if (!interaction) {
+        return;
+    }
+
+    interaction->swapSelection();
 }
 
 void NotationActionController::undo()
@@ -263,7 +364,7 @@ void NotationActionController::openStaffProperties()
         return;
     }
 
-    int staffIdx = interaction->selection()->range().startStaffIndex;
+    int staffIdx = interaction->selection()->range()->startStaffIndex();
     interactive()->open("musescore://notation/staffproperties?staffIdx=" + QString::number(staffIdx).toStdString());
 }
 

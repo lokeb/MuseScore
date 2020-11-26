@@ -27,7 +27,7 @@ class KeyEditor;
 //   MasterPalette
 //---------------------------------------------------------
 
-class MasterPalette : public QWidget, Ui::MasterPalette
+class MasterPalette : public QDialog, Ui::MasterPalette
 {
     Q_OBJECT
 
@@ -59,8 +59,13 @@ protected:
 
 public:
     MasterPalette(QWidget* parent = 0);
+    MasterPalette(const MasterPalette& dialog);
+
     void selectItem(const QString& s);
     QString selectedItem();
 };
 } // namespace Ms
+
+Q_DECLARE_METATYPE(Ms::MasterPalette)
+
 #endif

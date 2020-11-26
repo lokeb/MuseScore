@@ -26,8 +26,7 @@
 #include "inotation.h"
 #include "iinteractive.h"
 
-namespace mu {
-namespace notation {
+namespace mu::notation {
 class NotationActionController : public actions::Actionable
 {
     INJECT(notation, actions::IActionsDispatcher, dispatcher)
@@ -35,11 +34,9 @@ class NotationActionController : public actions::Actionable
     INJECT(notation, framework::IInteractive, interactive)
 
 public:
-
     void init();
 
 private:
-
     bool canReceiveAction(const actions::ActionName& action) const override;
 
     INotationPtr currentNotation() const;
@@ -52,7 +49,13 @@ private:
     void moveAction(const actions::ActionName& action);
     void moveText(INotationInteractionPtr interaction, const actions::ActionName& action);
 
+    void swapVoices(int voiceIndex1, int voiceIndex2);
+
+    void cutSelection();
+    void copySelection();
     void deleteSelection();
+    void swapSelection();
+
     void undo();
     void redo();
     void selectAll();
@@ -63,8 +66,17 @@ private:
     void openScoreProperties();
     void openTransposeDialog();
     void openPartsDialog();
+
+    enum class PastingType {
+        Default,
+        Half,
+        Double,
+        Special
+    };
+
+    void pasteSelection(PastingType type = PastingType::Default);
+    Fraction resolvePastingScale(const INotationInteractionPtr& interaction, PastingType type) const;
 };
-}
 }
 
 #endif // MU_NOTATION_NOTATIONACTIONCONTROLLER_H

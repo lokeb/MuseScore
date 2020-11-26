@@ -58,35 +58,37 @@ static const Settings::Key STYLES_DIR_KEY(module_name, "application/paths/myStyl
 
 static const Settings::Key IS_MIDI_INPUT_ENABLED(module_name, "io/midi/enableInput");
 
+static const Settings::Key TOOLBAR_KEY(module_name, "ui/toolbar/");
+
 void NotationConfiguration::init()
 {
-    settings()->addItem(ANCHORLINE_COLOR, Val(QColor("#C31989")));
+    settings()->setDefaultValue(ANCHORLINE_COLOR, Val(QColor("#C31989")));
 
-    settings()->addItem(BACKGROUND_COLOR, Val(QColor("#142433")));
+    settings()->setDefaultValue(BACKGROUND_COLOR, Val(QColor("#142433")));
     settings()->valueChanged(BACKGROUND_COLOR).onReceive(nullptr, [this](const Val& val) {
         LOGD() << "BACKGROUND_COLOR changed: " << val.toString();
         m_backgroundColorChanged.send(val.toQColor());
     });
 
-    settings()->addItem(FOREGROUND_COLOR, Val(QColor("#f9f9f9")));
+    settings()->setDefaultValue(FOREGROUND_COLOR, Val(QColor("#f9f9f9")));
     settings()->valueChanged(FOREGROUND_COLOR).onReceive(nullptr, [this](const Val& val) {
         LOGD() << "FOREGROUND_COLOR changed: " << val.toString();
         m_foregroundColorChanged.send(foregroundColor());
     });
 
-    settings()->addItem(FOREGROUND_USE_USER_COLOR, Val(true));
+    settings()->setDefaultValue(FOREGROUND_USE_USER_COLOR, Val(true));
     settings()->valueChanged(FOREGROUND_USE_USER_COLOR).onReceive(nullptr, [this](const Val& val) {
         LOGD() << "FOREGROUND_USE_USER_COLOR changed: " << val.toString();
         m_foregroundColorChanged.send(foregroundColor());
     });
 
-    settings()->addItem(CURRENT_ZOOM, Val(100));
+    settings()->setDefaultValue(CURRENT_ZOOM, Val(100));
     settings()->valueChanged(CURRENT_ZOOM).onReceive(nullptr, [this](const Val& val) {
         m_currentZoomChanged.send(val.toInt());
     });
 
-    settings()->addItem(SELECTION_PROXIMITY, Val(6));
-    settings()->addItem(IS_MIDI_INPUT_ENABLED, Val(false));
+    settings()->setDefaultValue(SELECTION_PROXIMITY, Val(6));
+    settings()->setDefaultValue(IS_MIDI_INPUT_ENABLED, Val(false));
 
     // libmscore
     preferences().setBackupDirPath(globalConfiguration()->backupPath().toQString());
@@ -158,6 +160,11 @@ QColor NotationConfiguration::playbackCursorColor() const
     return c;
 }
 
+QColor NotationConfiguration::selectionColor() const
+{
+    return Ms::MScore::selectColor[0];
+}
+
 int NotationConfiguration::selectionProximity() const
 {
     return settings()->value(SELECTION_PROXIMITY).toInt();
@@ -200,4 +207,43 @@ float NotationConfiguration::guiScaling() const
 float NotationConfiguration::notationScaling() const
 {
     return uiConfiguration()->physicalDotsPerInch() / Ms::DPI;
+}
+
+std::vector<std::string> NotationConfiguration::toolbarActions(const std::string& toolbarName) const
+{
+    return parseToolbarActions(settings()->value(toolbarSettingsKey(toolbarName)).toString());
+}
+
+void NotationConfiguration::setToolbarActions(const std::string& toolbarName, const std::vector<std::string>& actions)
+{
+    QStringList qactions;
+    for (const std::string& action: actions) {
+        qactions << QString::fromStdString(action);
+    }
+
+    Val value(qactions.join(",").toStdString());
+    settings()->setValue(toolbarSettingsKey(toolbarName), value);
+}
+
+std::vector<std::string> NotationConfiguration::parseToolbarActions(const std::string& actions) const
+{
+    if (actions.empty()) {
+        return {};
+    }
+
+    std::vector<std::string> result;
+
+    QStringList actionsList = QString::fromStdString(actions).split(",");
+    for (const QString& action: actionsList) {
+        result.push_back(action.toStdString());
+    }
+
+    return result;
+}
+
+Settings::Key NotationConfiguration::toolbarSettingsKey(const std::string& toolbarName) const
+{
+    Settings::Key toolbarKey = TOOLBAR_KEY;
+    toolbarKey.key += toolbarName;
+    return toolbarKey;
 }

@@ -24,7 +24,7 @@
 #include "libmscore/bracket.h"
 #include "libmscore/arpeggio.h"
 #include "libmscore/glissando.h"
-#include "libmscore/repeat.h"
+#include "libmscore/measurerepeat.h"
 #include "libmscore/breath.h"
 #include "libmscore/harmony.h"
 #include "libmscore/text.h"
@@ -119,7 +119,7 @@ void MasterPalette::addPalette(Palette* sp)
 //---------------------------------------------------------
 
 MasterPalette::MasterPalette(QWidget* parent)
-    : QWidget(parent, Qt::Dialog)
+    : QDialog(parent)
 {
     setObjectName("MasterPalette");
     setupUi(this);
@@ -190,6 +190,11 @@ MasterPalette::MasterPalette(QWidget* parent)
     retranslate(true);
 
     WidgetStateStore::restoreGeometry(this);
+}
+
+MasterPalette::MasterPalette(const MasterPalette& dialog)
+    : MasterPalette(dialog.parentWidget())
+{
 }
 
 //---------------------------------------------------------

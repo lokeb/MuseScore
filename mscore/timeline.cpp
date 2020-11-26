@@ -1423,7 +1423,10 @@ void Timeline::jumpMarkerMeta(Segment* seg, int* stagger, int pos)
             text.push_back(tf.text);
         }
         measure = marker->measure();
-        if (marker->markerType() == Marker::Type::FINE || marker->markerType() == Marker::Type::TOCODA) {
+        if (marker->markerType() == Marker::Type::FINE
+            || marker->markerType() == Marker::Type::TOCODA
+            || marker->markerType() == Marker::Type::TOCODASYM
+            ) {
             elementType = ElementType::MARKER;
             std::get<2>(_repeatInfo) = std::get<3>(_repeatInfo);
             std::get<3>(_repeatInfo) = nullptr;
@@ -2649,7 +2652,7 @@ QColor Timeline::colorBox(QGraphicsRectItem* item)
             ChordRest* chordRest = seg->cr(track);
             if (chordRest) {
                 ElementType crt = chordRest->type();
-                if (crt == ElementType::CHORD || crt == ElementType::REPEAT_MEASURE) {
+                if (crt == ElementType::CHORD || crt == ElementType::MEASURE_REPEAT) {
                     return activeTheme().colorBoxColor;
                 }
             }

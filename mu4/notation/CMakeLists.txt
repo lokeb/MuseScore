@@ -35,6 +35,10 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/inotation.h
     ${CMAKE_CURRENT_LIST_DIR}/inotationreader.h
     ${CMAKE_CURRENT_LIST_DIR}/inotationreadersregister.h
+    ${CMAKE_CURRENT_LIST_DIR}/inotationwriter.h
+    ${CMAKE_CURRENT_LIST_DIR}/inotationwritersregister.h
+    ${CMAKE_CURRENT_LIST_DIR}/abstractnotationwriter.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/abstractnotationwriter.cpp
     ${CMAKE_CURRENT_LIST_DIR}/inotationcreator.h
     ${CMAKE_CURRENT_LIST_DIR}/inotationinputstate.h
     ${CMAKE_CURRENT_LIST_DIR}/inotationselection.h
@@ -70,6 +74,8 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/internal/notationinputstate.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/notationselection.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/notationselection.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/notationselectionrange.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/notationselectionrange.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/notationelements.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/notationelements.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/notationactioncontroller.cpp
@@ -83,6 +89,8 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/internal/mscznotationreader.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/notationreadersregister.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/notationreadersregister.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/notationwritersregister.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/notationwritersregister.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/msczmetareader.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/msczmetareader.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/notationplayback.cpp
@@ -105,6 +113,7 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/internal/inotationactionsrepository.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/searchcommandsparser.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/searchcommandsparser.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/inotationselectionrange.h
     ${CMAKE_CURRENT_LIST_DIR}/view/notationpaintview.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/notationpaintview.h
     ${CMAKE_CURRENT_LIST_DIR}/view/notationviewinputcontroller.cpp
@@ -127,6 +136,12 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/view/partlistmodel.h
     ${CMAKE_CURRENT_LIST_DIR}/view/searchpopupmodel.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/searchpopupmodel.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/noteinputbarcustomisemodel.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/noteinputbarcustomisemodel.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/internal/abstractnoteinputbaritem.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/internal/abstractnoteinputbaritem.h
+    ${CMAKE_CURRENT_LIST_DIR}/view/internal/actionnoteinputbaritem.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/view/internal/actionnoteinputbaritem.h
     )
 
 set(MODULE_UI

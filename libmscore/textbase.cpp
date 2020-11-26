@@ -1025,7 +1025,7 @@ QFont TextFragment::font(const TextBase* t) const
     font.setItalic(format.italic());
     Q_ASSERT(m > 0.0);
 
-    font.setPointSizeF(m);
+    font.setPointSizeF(m * t->mag());
     return font;
 }
 
@@ -2527,7 +2527,7 @@ bool TextBase::mousePress(EditData& ed)
     if (!ted->cursor()->set(ed.startMove, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor)) {
         return false;
     }
-    if (ed.buttons == Qt::MidButton) {
+    if (ed.buttons == Qt::MiddleButton) {
         paste(ed);
     }
     score()->setUpdateAll();

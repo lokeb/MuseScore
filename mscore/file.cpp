@@ -16,6 +16,8 @@
 
 #include <QFileInfo>
 
+#include "mu4/cloud/internal/cloudmanager.h"
+
 #include "config.h"
 #include "globals.h"
 #include "musescore.h"
@@ -96,28 +98,6 @@ namespace Ms {
 extern void importSoundfont(QString name);
 
 extern MasterSynthesizer* synti;
-
-//---------------------------------------------------------
-//   paintElement(s)
-//---------------------------------------------------------
-
-static void paintElement(QPainter& p, const Element* e)
-{
-    QPointF pos(e->pagePos());
-    p.translate(pos);
-    e->draw(&p);
-    p.translate(-pos);
-}
-
-static void paintElements(QPainter& p, const QList<Element*>& el)
-{
-    for (Element* e : el) {
-        if (!e->visible()) {
-            continue;
-        }
-        paintElement(p, e);
-    }
-}
 
 //---------------------------------------------------------
 //   createDefaultFileName
@@ -1748,6 +1728,7 @@ void MuseScore::exportFile()
     fl.append(tr("Compressed MusicXML File") + " (*.mxl)");
     fl.append(tr("Uncompressed MusicXML File") + " (*.musicxml)");
     fl.append(tr("Uncompressed MusicXML File (outdated)") + " (*.xml)");
+    fl.append(tr("Braille File Format (experimental)") + " (*.brf)");
     fl.append(tr("Uncompressed MuseScore 4 File") + " (*.mscx)");       // for debugging purposes
 
     QString saveDialogTitle = tr("Export");
@@ -2097,6 +2078,8 @@ bool MuseScore::saveAs(Score* cs_, bool saveCopy, const QString& path, const QSt
         rv = cs_->sanityCheck(fn);
     } else if (ext == "metajson") {
         rv = saveMetadataJSON(cs, fn);
+    } else if (ext == "brf") {
+        rv = saveBraille(cs_, fn);
     } else {
         qDebug("Internal error: unsupported extension <%s>",
                qPrintable(ext));
@@ -3548,6 +3531,87 @@ QByteArray MuseScore::exportPdfAsJSON(Score* score)
     }
 
     return pdfData.toBase64();
+}
+
+//---------------------------------------------------------
+//   parseSourceUrl
+//---------------------------------------------------------
+
+static void parseSourceUrl(const QString& sourceUrl, int& uid, int& nid)
+{
+    if (!sourceUrl.isEmpty()) {
+        QStringList sl = sourceUrl.split("/");
+        if (sl.length() >= 1) {
+            nid = sl.last().toInt();
+            if (sl.length() >= 3) {
+                uid = sl.at(sl.length() - 3).toInt();
+            }
+        }
+    }
+}
+
+//---------------------------------------------------------
+//   saveOnline
+//---------------------------------------------------------
+
+bool MuseScore::saveOnline(const QStringList& inFilePaths)
+{
+    if (!_loginManager->syncGetUser()) {
+        return false;
+    }
+
+    QTemporaryDir tempDir;
+    if (!tempDir.isValid()) {
+        qCritical() << qUtf8Printable(tr("Error: %1").arg(tempDir.errorString()));
+        return false;
+    }
+    QString tempPath = tempDir.path() + "/score.mscz";
+
+    bool all_successful = true;
+
+    for (auto path : inFilePaths) {
+        Score* score = mscore->readScore(path);
+        if (!score) {
+            all_successful = false;
+            continue;
+        }
+
+        int uid = 0;
+        int nid = 0;
+        parseSourceUrl(score->metaTag("source"), uid, nid);
+
+        if (nid <= 0) {
+            qCritical() << qUtf8Printable(tr("Error: '%1' tag missing or badly formed in %2").arg("source").arg(path));
+            all_successful = false;
+            continue;
+        }
+
+        if (uid && uid != _loginManager->accountInfo().id) {
+            qCritical() << qUtf8Printable(tr("Error: You are not the owner of the online score for %1").arg(path));
+            all_successful = false;
+            continue;
+        }
+
+        if (!_loginManager->syncGetScoreInfo(nid)) {
+            all_successful = false;
+            continue;
+        }
+        mu::cloud::ScoreInfo scoreInfo = _loginManager->scoreInfo();
+
+        if (!mscore->saveAs(score, true, tempPath, "mscz")) {
+            all_successful = false;
+            continue;
+        }
+
+        if (!_loginManager->syncUpload(tempPath, nid, scoreInfo.title)) { // keep same title
+            all_successful = false;
+            continue;
+        }
+
+        qInfo() << qUtf8Printable(tr("Uploaded score")) << path;
+    }
+
+    return all_successful;
 }
 
 //---------------------------------------------------------

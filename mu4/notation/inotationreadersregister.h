@@ -25,20 +25,19 @@
 #include "modularity/imoduleexport.h"
 #include "inotationreader.h"
 
-namespace mu {
-namespace notation {
+namespace mu::notation {
 class INotationReadersRegister : MODULE_EXPORT_INTERFACE
 {
     INTERFACE_ID(INotationReadersRegister)
+
 public:
     virtual ~INotationReadersRegister() = default;
 
     //! NOTE In the future, we need to replace the suffix with an enumerator
     //! or a better structure describing the format.
-    virtual void reg(const std::vector<std::string>& syffixs, std::shared_ptr<INotationReader> reader) = 0;
-    virtual std::shared_ptr<INotationReader> reader(const std::string& syffix) = 0;
+    virtual void reg(const std::vector<std::string>& suffixes, INotationReaderPtr reader) = 0;
+    virtual INotationReaderPtr reader(const std::string& suffix) = 0;
 };
-}
 }
 
 #endif // MU_NOTATION_INOTATIONREADERSREGISTER_H

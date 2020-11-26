@@ -108,10 +108,14 @@ public:
     void changeTextCursorPosition(const QPointF& newCursorPos) override;
     async::Notification textEditingChanged() const override;
 
+    void copySelection() override;
+    void pasteSelection(const Fraction& scale = Fraction(1, 1)) override;
+    void swapSelection() override;
     void deleteSelection() override;
 
     void setBreaksSpawnInterval(BreaksSpawnIntervalType intervalType, int interval = 0) override;
     void transpose(const TransposeOptions& options) override;
+    void swapVoices(int voiceIndex1, int voiceIndex2) override;
 
 private:
     Ms::Score* score() const;
@@ -128,6 +132,7 @@ private:
     void resetAnchorLines();
     void drawAnchorLines(QPainter* painter);
     void drawTextEditMode(QPainter* painter);
+    void drawSelectionRange(QPainter* painter);
     void moveElementSelection(MoveDirection d);
 
     Element* dropTarget(Ms::EditData& ed) const;
@@ -140,6 +145,8 @@ private:
                                  QPointF pt = QPointF(), bool pasteMode = false);
     void cmdAddSlur(const Ms::Slur* slurTemplate = nullptr);
     void addSlur(Ms::ChordRest* cr1, Ms::ChordRest* cr2, const Ms::Slur* slurTemplate);
+
+    bool isVoiceIndexValid(int voiceIndex) const;
 
     struct HitMeasureData
     {

@@ -502,6 +502,11 @@ mu::RetVal<bool> MasterNotation::created() const
 
 mu::Ret MasterNotation::save(const mu::io::path& path)
 {
+    std::string suffix = io::syffix(path);
+    if (suffix != "mscz" && suffix != "mscx" && !suffix.empty()) {
+        return exportScore(path, suffix);
+    }
+
     if (!path.empty()) {
         score()->masterScore()->fileInfo()->setFile(path.toQString());
     }
@@ -515,6 +520,23 @@ mu::Ret MasterNotation::save(const mu::io::path& path)
     }
 
     return ok;
+}
+
+mu::Ret MasterNotation::exportScore(const io::path& path, const std::string& suffix)
+{
+    QFile file(path.toQString());
+    file.open(QFile::WriteOnly);
+
+    auto writer = writers()->writer(suffix);
+    if (!writer) {
+        LOGE() << "Unknown export format:" << suffix;
+        return false;
+    }
+
+    Ret ret = writer->write(*score(), file);
+    file.close();
+
+    return ret;
 }
 
 mu::ValNt<bool> MasterNotation::needSave() const

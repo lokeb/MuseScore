@@ -746,6 +746,7 @@ public:
     bool savePositions(Score*, QIODevice*, bool segments);
     bool saveMetadataJSON(Score*, const QString& name);
     QJsonObject saveMetadataJSON(Score*);
+    bool saveOnline(const QStringList& inFilePaths);
 
     /////The methods are used in the musescore.com backend
     bool exportAllMediaFiles(const QString& inFilePath, const QString& highlightConfigPath, const QString& outFilePath = "/dev/stdout");
@@ -888,6 +889,7 @@ extern bool saveMxl(Score*, const QString& name);
 extern bool saveMxl(Score*, QIODevice*);
 extern bool saveXml(Score*, QIODevice*);
 extern bool saveXml(Score*, const QString& name);
+extern bool saveBraille(Score*, const QString& name);
 
 extern QString getSharePath();
 
